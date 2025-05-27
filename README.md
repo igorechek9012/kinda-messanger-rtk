@@ -23,3 +23,11 @@ To start backend server run:
 cd backend
 node index.cjs
 ```
+
+## Usage notes
+
+There are two users by default - Guest and Incognito. You can login via one of them or use your own user by texting username on login page.
+
+Enable two themes - light (default) and dark.
+
+Change const BACKEND_URL if you host express service on different domain/port.
