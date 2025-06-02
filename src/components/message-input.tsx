@@ -19,7 +19,6 @@ export const MessageInput: FC = () => {
         if (currentUser) {
             setText(e.target.value)
 
-            console.log('send typing')
             sendTyping(currentUser.name, true)
 
             if (typingTimeout.current) {
@@ -39,16 +38,12 @@ export const MessageInput: FC = () => {
         if (text.trim() === '') return
 
         if (currentUser && currentChatId) {
-            try {
-                await sendMessage({ text, chatId: currentChatId, sender: currentUser.name })
-                    .unwrap()
-                    .then((newMessage) => socket.emit('sendMessage', newMessage))
-
-                sendTyping(currentUser.name, false)
-                setText('')
-            } catch {
-                console.error('error on sending message')
-            }
+            await sendMessage({ text, chatId: currentChatId, sender: currentUser.name })
+                .unwrap()
+                .then(() => {
+                    sendTyping(currentUser.name, false)
+                    setText('')
+                })
         }
     }
 

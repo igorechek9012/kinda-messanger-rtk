@@ -16,7 +16,6 @@ export const useLogin = () => {
 
                 if (onSuccess) onSuccess(response)
             })
-            .catch((error: Error) => console.error('login error ->', error))
     }
 
     return { login, isLoading, isError }

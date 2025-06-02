@@ -15,7 +15,9 @@ export const usersApi = createApi({
             async onCacheEntryAdded(_, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) {
                 const handleOnlineUsersEmit = (onlineUsers: string[]) => {
                     updateCachedData((draft) => {
-                        return draft.map((user) => ({ ...user, isOnline: onlineUsers.includes(user.name) }))
+                        const newUsers: User[] = onlineUsers.filter((username) => !draft.map(user => user.name).some(name => name === username)).map((username) => ({id: username, name: username, isOnline: true}))
+
+                        return [...draft.map((user) => ({ ...user, isOnline: onlineUsers.includes(user.name) })), ...newUsers]
                     })
                 }
 

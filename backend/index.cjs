@@ -60,7 +60,13 @@ app.get('/api/groups', (req, res) => {
 })
 
 app.get('/api/chats', (req, res) => {
-    const chatsWithMessages = chats.map((chat) => {
+    let responseChats = chats
+
+    if (req.query.username) {
+        responseChats = chats.filter(chat => chat.users.includes(req.query.username))
+    }
+
+    const chatsWithMessages = responseChats.map((chat) => {
         const lastMessage = getLastMessageFromChat(messages, chat.id)
 
         return {
@@ -71,33 +77,12 @@ app.get('/api/chats', (req, res) => {
     res.json(chatsWithMessages)
 })
 
-app.post('/api/chats', (req, res) => {
-    const { users } = req.body
-    const newChat = {
-        users,
-        id: crypto.randomUUID()
-    }
-    chats.push(newChat)
-    res.json(newChat)
-})
-
 app.get('/api/messages/:chatId', (req, res) => {
     let result = messages
     if (req.params.chatId !== undefined) {
         result = messages.filter((message) => message.chatId === req.params.chatId)
     }
     res.json(result)
-})
-
-app.post('/api/messages', (req, res) => {
-    const message = req.body
-    const newMessage = {
-        id: crypto.randomUUID(),
-        timestamp: new Date().getTime(),
-        ...message,
-    }
-    messages.push(newMessage)
-    res.json(newMessage)
 })
 
 app.get('/api/users', (req, res) => {
@@ -119,25 +104,7 @@ io.on('connection', (socket) => {
         console.log('Client disconnected')
     })
 
-    socket.on('sendMessage', (msg) => {
-        const { chatId } = msg
-        const currentUser = onlineUsers[socket.id]
-        const currentChat = chats.find((chat) => chat.id === chatId)
-
-        if (currentUser && currentChat) {
-            const emitToUsers = currentChat.users.filter((user) => user !== currentUser)
-            const emitToSockets = emitToUsers.map((username) => Object.keys(onlineUsers).find((socketId) => onlineUsers[socketId] === username))
-
-            emitToSockets.forEach(socket => {
-                if (socket) io.to(socket).emit('newMessage', msg)
-            })
-        }
-    })
-
-    socket.on('chatCreate', () => {
-        io.emit('chatCreate')
-    })
-
+    // {username, chatId}
     socket.on('typing', (username) => {
         socket.broadcast.emit('typing', username)
     })
@@ -145,6 +112,74 @@ io.on('connection', (socket) => {
     socket.on('stopTyping', (username) => {
         socket.broadcast.emit('stopTyping', username)
     })
+})
+
+app.post('/api/chats', (req, res) => {
+    const { users, sender } = req.body
+
+    if (!users || users.length !== 2) {
+        res.status(400).send('Users must not be empty')
+        return
+    }
+
+    const newChat = {
+        users,
+        id: crypto.randomUUID(),
+        messages: []
+    }
+    chats.push(newChat)
+
+    if (newChat && sender) {
+        const emitToUsers = newChat.users.filter((user) => user !== sender)
+        const emitToSockets = emitToUsers.map((username) => Object.keys(onlineUsers).find((socketId) => onlineUsers[socketId] === username))
+
+        emitToSockets.forEach(socket => {
+            if (socket) io.to(socket).emit('newChat', newChat)
+        })
+    }
+
+    res.json(newChat)
+})
+
+app.post('/api/messages', (req, res) => {
+    const {text, sender, chatId} = req.body
+
+    if (!text || text.trim() === '') {
+        res.status(400).send('Text must not be empty')
+        return
+    }
+
+    if (!sender) {
+        res.status(400).send('Sender must not be empty')
+        return
+    }
+
+    if (!chatId) {
+        res.status(400).send('ChatId must not be empty')
+        return
+    }
+
+    const newMessage = {
+        id: crypto.randomUUID(),
+        timestamp: new Date().getTime(),
+        text,
+        sender,
+        chatId,
+    }
+    messages.push(newMessage)
+
+    const currentChat = chats.find((chat) => chat.id === chatId)
+
+    if (currentChat && newMessage) {
+        const emitToUsers = currentChat.users.filter((user) => user !== sender)
+        const emitToSockets = emitToUsers.map((username) => Object.keys(onlineUsers).find((socketId) => onlineUsers[socketId] === username))
+
+        emitToSockets.forEach(socket => {
+            if (socket) io.to(socket).emit('newMessage', newMessage)
+        })
+    }
+
+    res.json(newMessage)
 })
 
 const PORT = 3001

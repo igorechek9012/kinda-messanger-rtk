@@ -10,7 +10,6 @@ export const useTypingUsers = (): useTypingUsersReturn => {
     const [typingUsers, setTypingUsers] = useState<string[]>([])
 
     const addTypingUser = (userName: string) => {
-        console.log(userName)
         if (!typingUsers.includes(userName)) {
             setTypingUsers(([...users]) => [...users, userName])
         }

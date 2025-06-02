@@ -5,16 +5,19 @@ import { useGetCurrentUser, useGetUsersQuery } from '~/services/user'
 import { useGetChatsQuery, type Chat, useCreateChatMutation } from '~/services/chat'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useNotificationContext } from '~/hooks'
+import { skipToken } from '@reduxjs/toolkit/query'
 
 export const ChatPage: FC = () => {
     const { id: currentChatId } = useParams()
     const navigate = useNavigate()
 
-    const { data: chats, isLoading: chatsLoading } = useGetChatsQuery()
+
+    const { currentUser } = useGetCurrentUser()
+
+    const { data: chats, isLoading: chatsLoading } = useGetChatsQuery(currentUser?.name ?? skipToken)
     const [createChat, { isLoading: creatingChat }] = useCreateChatMutation()
 
     const { data: users, isLoading: usersLoading } = useGetUsersQuery()
-    const { currentUser } = useGetCurrentUser()
 
     const { markChatAsRead } = useNotificationContext()
 
@@ -39,10 +42,9 @@ export const ChatPage: FC = () => {
         if (chat) {
             navigate(`/chat/${chat.id}`)
         } else {
-            await createChat({ users: [String(userId), currentUser?.name] })
+            await createChat({ users: [String(userId), currentUser.name], sender: currentUser.name })
                 .unwrap()
                 .then((createdChat) => navigate(`/chat/${createdChat.id}`))
-                .catch((error) => console.error('error creating chat ->', error))
         }
     }
 

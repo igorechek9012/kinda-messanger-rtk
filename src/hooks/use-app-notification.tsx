@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import type { Notification } from '~/types'
 import { useTypingUsers, type useTypingUsersReturn } from '~/hooks/use-typing-users.tsx'
+import { useAppDispatch, useAppSelector } from '~/hooks/store.ts'
+import { setNotification } from '~/store'
 
 export type useAppNotificationReturn = {
     current: Notification | null
@@ -12,7 +14,10 @@ export type useAppNotificationReturn = {
 } & useTypingUsersReturn
 
 export const useAppNotification = (): useAppNotificationReturn => {
-    const [current, setCurrent] = useState<Notification | null>(null)
+    // const [current, setCurrent] = useState<Notification | null>(null)
+    const dispatch = useAppDispatch()
+
+    const current = useAppSelector(state => state.notifications.current)
     const [unreadChats, setUnreadChats] = useState<string[]>([])
 
     const typingUserProps = useTypingUsers()
@@ -26,11 +31,13 @@ export const useAppNotification = (): useAppNotificationReturn => {
     }
 
     const showNotification = (notification: Notification) => {
-        setCurrent(notification)
+        // setCurrent(notification)
+        dispatch(setNotification(notification))
     }
 
     const hideNotification = () => {
-        setCurrent(null)
+        // setCurrent(null)
+        dispatch(setNotification(null))
     }
 
     return {

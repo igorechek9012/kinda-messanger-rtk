@@ -1,5 +1,9 @@
 import type { Message } from '~/services/message'
 
+export type NotificationState = {
+    current: Notification | null
+}
+
 export type Notification = {
     text?: string
     message?: Message
